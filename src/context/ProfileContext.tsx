@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, ReactNode } fr
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { uploadAvatar } from '../lib/avatar';
-import { t } from '../i18n';
+import { t, type I18nMap } from '../i18n';
 import { useData, rowToStudent, type ProfileRow } from './DataContext';
 import type { Role, Student } from '../types';
 
@@ -25,6 +25,8 @@ export type Profile = {
   interests: string[];
   freeSlots: string[];
   achievements: Achievement[];
+  /** Базадағы аудармалар (about, city) — тек көрсету үшін */
+  i18n?: I18nMap;
 };
 
 type ProfileContextType = {
@@ -87,6 +89,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         interests: row.interests,
         freeSlots: row.free_slots,
         achievements: extras.achievements,
+        i18n: row.i18n,
       }
     : { ...empty, photo: extras.photo, achievements: extras.achievements };
 
@@ -107,6 +110,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     if (patch.age !== undefined) db.age = patch.age;
     if (patch.city !== undefined) db.city = patch.city;
     if (patch.about !== undefined) db.about = patch.about;
+    if ((patch.about !== undefined && patch.about !== row?.about) || (patch.city !== undefined && patch.city !== row?.city)) {
+      db.i18n = {};
+    }
     if (patch.role !== undefined) db.role = patch.role;
     if (patch.skills !== undefined) db.skills = patch.skills;
     if (patch.interests !== undefined) db.interests = patch.interests;

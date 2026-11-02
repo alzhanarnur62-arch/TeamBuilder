@@ -8,7 +8,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
-import { t, useLang, roleName, slotName } from '../i18n';
+import { t, useLang, roleName, slotName, tagName } from '../i18n';
 import { students } from '../data/mock';
 import { useIdeas } from '../context/IdeasContext';
 import type { Role } from '../types';
@@ -119,7 +119,7 @@ export default function CreateIdeaScreen() {
         <Text style={styles.label}>{t('idea.skills')}</Text>
         <View style={styles.chips}>
           {skillOptions.map((s) => (
-            <Chip key={s} label={s} active={skills.includes(s)} onPress={() => setSkills(toggle(skills, s))} />
+            <Chip key={s} label={tagName(s)} active={skills.includes(s)} onPress={() => setSkills(toggle(skills, s))} />
           ))}
         </View>
         <View style={styles.addRow}>

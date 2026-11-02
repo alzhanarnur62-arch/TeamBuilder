@@ -14,7 +14,9 @@ Built with Expo (React Native) and Supabase. Runs in **Expo Go** — no native b
 - **Automatic team building** — the app checks every possible line-up and suggests the 3 most balanced teams, with a score, a breakdown and the reasons behind each decision (see below).
 - **Tasks and personal contribution** — a task board (to do → in progress → done) with points, plus peer ratings (1–5 ★). A *contribution index* combines both.
 - **Chats** — project group chats and direct messages, updated in real time.
-- **News (REST API)** — announcements loaded with `fetch` from a public REST API, with loading, error, empty, offline-cache and pull-to-refresh states.
+- **Campus news (REST API)** — announcements in three languages loaded with `fetch` from the project's own REST API, with loading, error, empty, offline-cache and pull-to-refresh states.
+- **Saved items (SQLite)** — save news offline, mark them read/unread, filter, search and delete; works without internet.
+- **Event registration** — a form with per-field validation (name, group, phone, email, real future date, 1–5 participants, consent).
 - **Email sign-in with a one-time code** — no passwords; the session is remembered.
 
 ## How team building works
@@ -77,7 +79,7 @@ Scan the QR code with Expo Go.
 
 1. Create a project. In **Project Settings → API Keys** copy the **Project URL** and the **publishable** key into `.env`. Never put the secret key in the app.
 2. In **SQL Editor**, run these files in order: `supabase/schema.sql`, `supabase/storage.sql`, `supabase/ratings.sql`.
-3. Optional demo data: sign in to the app once, then run `supabase/seed.sql` (17 demo students, two projects, requests). The first registered user becomes the lead of the demo project.
+3. Optional demo data: sign in to the app once, then run `supabase/seed.sql` (17 demo students, two projects, requests) and `supabase/i18n_news.sql` (campus news and translations of the demo data). The first registered user becomes the lead of the demo project.
 4. **Sign-in codes by email:** in **Authentication → Emails**, set up custom SMTP (for example Gmail with an app password). Then in the **Confirm sign up** and **Magic link or OTP** templates, show the code with `{{ .Token }}`.
 
 ## Security

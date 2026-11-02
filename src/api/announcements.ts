@@ -1,30 +1,46 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { Lang } from '../i18n';
 import type { Announcement } from '../types/announcement';
 
 /*
- * Сыртқы REST API: хабарландырулар (Зертханалық жұмыс 8).
- * Мекенжай .env файлында (EXPO_PUBLIC_NEWS_API_URL), жоқ болса — JSONPlaceholder.
+ * REST API: кампус хабарландырулары (Зертханалық жұмыс 8, 10).
+ * Өз REST API-міз — Supabase-тегі announcements кестесі (PostgREST). Мәтін 3 тілде,
+ * сұраныста қазіргі тілдің бағандары таңдалады: title:title_ru → жауапта жай ғана «title».
+ * Мекенжай .env файлында (EXPO_PUBLIC_NEWS_API_URL).
  */
-export const API_URL = process.env.EXPO_PUBLIC_NEWS_API_URL ?? 'https://jsonplaceholder.typicode.com';
-const ANNOUNCEMENTS_URL = API_URL + '/posts?_limit=10';
-const CACHE_KEY = 'teambuilder_news_cache_v1';
+export const API_URL =
+  process.env.EXPO_PUBLIC_NEWS_API_URL ?? `${process.env.EXPO_PUBLIC_SUPABASE_URL}/rest/v1`;
+const API_KEY = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '';
+const HEADERS = { apikey: API_KEY, Accept: 'application/json' };
+const CACHE_KEY = 'teambuilder_news_cache_v2';
 
-/** GET /posts?_limit=10 — 10 хабарландыру. signal — сұранысты тоқтату үшін (AbortController). */
-export async function getAnnouncements(signal?: AbortSignal): Promise<Announcement[]> {
-  const response = await fetch(ANNOUNCEMENTS_URL, { signal });
+/** Жауап Announcement типімен бірдей болуы үшін бағандардың атын өзгертеміз. */
+const fields = (lang: Lang) => `id,userId:author_id,title:title_${lang},body:body_${lang}`;
+
+/** GET /announcements — 10 хабарландыру. signal — сұранысты тоқтату үшін (AbortController). */
+export async function getAnnouncements(lang: Lang, signal?: AbortSignal): Promise<Announcement[]> {
+  const response = await fetch(`${API_URL}/announcements?select=${fields(lang)}&order=id.asc&limit=10`, {
+    signal,
+    headers: HEADERS,
+  });
   if (!response.ok) {
     throw new Error('HTTP ' + response.status);
   }
   return response.json() as Promise<Announcement[]>;
 }
 
-/** GET /posts/:id — бір хабарландыру. */
-export async function getAnnouncement(id: number, signal?: AbortSignal): Promise<Announcement> {
-  const response = await fetch(API_URL + '/posts/' + id, { signal });
+/** GET /announcements?id=eq.:id — бір хабарландыру. */
+export async function getAnnouncement(id: number, lang: Lang, signal?: AbortSignal): Promise<Announcement> {
+  const response = await fetch(`${API_URL}/announcements?select=${fields(lang)}&id=eq.${id}`, {
+    signal,
+    headers: HEADERS,
+  });
   if (!response.ok) {
     throw new Error('HTTP ' + response.status);
   }
-  return response.json() as Promise<Announcement>;
+  const rows = (await response.json()) as Announcement[];
+  if (rows.length === 0) throw new Error('HTTP 404');
+  return rows[0];
 }
 
 /* ---------- Кэш: интернет жоқ кезде соңғы жүктелген тізім көрсетіледі ---------- */

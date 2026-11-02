@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, FlatList, TextInput, Pressable, ActivityIndicator, StyleSheet,
+  Alert, View, Text, FlatList, TextInput, Pressable, ActivityIndicator, StyleSheet,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -11,6 +12,8 @@ import { AnnouncementCard } from '../components/AnnouncementCard';
 import { getAnnouncements, readNewsCache, writeNewsCache, isAbort } from '../api/announcements';
 import type { Announcement } from '../types/announcement';
 import type { RootStackParamList } from '../types/navigation';
+import { savePost, getSavedIds } from '../database/favorites';
+import { useMyId } from '../context/DataContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'News'>;
 
@@ -20,7 +23,7 @@ const timeOf = (ts: number) => {
 };
 
 export default function NewsScreen({ navigation }: Props) {
-  useLang();
+  const { lang } = useLang();
   const [items, setItems] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -28,6 +31,33 @@ export default function NewsScreen({ navigation }: Props) {
   const [cachedAt, setCachedAt] = useState<number | null>(null);
   const [query, setQuery] = useState('');
   const abortRef = useRef<AbortController | null>(null);
+  const myId = useMyId();
+  // Офлайн сақталғандардың id-лері (SQLite) — батырманы «Сақталды» деп көрсету үшін
+  const [savedIds, setSavedIds] = useState<Set<number>>(new Set());
+
+  // Экранға қайта оралған сайын (мысалы, «Таңдаулылардан» жойғаннан кейін) қайта оқимыз
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      getSavedIds(myId)
+        .then((ids) => active && setSavedIds(ids))
+        .catch(() => {});
+      return () => {
+        active = false;
+      };
+    }, [myId])
+  );
+
+  async function saveOffline(post: Announcement) {
+    try {
+      const count = await savePost(myId, post);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setSavedIds((prev) => new Set(prev).add(post.id));
+      Alert.alert(count ? t('fav.saved') : t('fav.alreadySaved'));
+    } catch {
+      Alert.alert(t('fav.saveFailed'));
+    }
+  }
 
   const loadData = useCallback(async () => {
     // Алдыңғы сұраныс әлі жүріп жатса — тоқтатамыз
@@ -35,7 +65,7 @@ export default function NewsScreen({ navigation }: Props) {
     const controller = new AbortController();
     abortRef.current = controller;
     try {
-      const data = await getAnnouncements(controller.signal);
+      const data = await getAnnouncements(lang, controller.signal);
       setItems(data);
       setError(null);
       setCachedAt(null);
@@ -46,7 +76,7 @@ export default function NewsScreen({ navigation }: Props) {
       // Интернет жоқ болса — соңғы сақталған тізімді көрсетеміз
       const cache = await readNewsCache();
       if (cache) {
-        setItems((prev) => (prev.length ? prev : cache.items));
+        setItems(cache.items);
         setCachedAt(cache.savedAt);
       }
     } finally {
@@ -55,9 +85,9 @@ export default function NewsScreen({ navigation }: Props) {
         setRefreshing(false);
       }
     }
-  }, []);
+  }, [lang]);
 
-  // Экран ашылғанда бір рет жүктейміз; экран жабылса — сұранысты тоқтатамыз
+  // Экран ашылғанда (және тіл ауысқанда) бір рет жүктейміз; экран жабылса — сұранысты тоқтатамыз
   useEffect(() => {
     Promise.resolve().then(loadData);
     return () => abortRef.current?.abort();
@@ -114,6 +144,10 @@ export default function NewsScreen({ navigation }: Props) {
         <AnnouncementCard
           item={item}
           onPress={() => navigation.navigate('NewsDetails', { announcementId: item.id })}
+          saved={savedIds.has(item.id)}
+          onSave={() => {
+            void saveOffline(item);
+          }}
         />
       )}
       refreshing={refreshing}

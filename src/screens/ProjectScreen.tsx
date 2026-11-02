@@ -7,7 +7,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, shadow } from '../theme';
-import { t, useLang, roleName } from '../i18n';
+import { t, useLang, roleName, tagName, localized } from '../i18n';
 import { useIdeas } from '../context/IdeasContext';
 import { useStudents } from '../context/ProfileContext';
 import { useData, useMyId } from '../context/DataContext';
@@ -97,14 +97,14 @@ export default function ProjectScreen({ route, navigation }: Props) {
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.title}>{project.title}</Text>
-        <Text style={styles.text}>{project.description}</Text>
+        <Text style={styles.text}>{localized(project.i18n, 'description', project.description)}</Text>
         <Text style={styles.owner}>{t('common.author', { name: owner?.name ?? '' })}</Text>
 
         <Text style={styles.section}>{t('project.skills')}</Text>
         <View style={styles.chips}>
           {project.neededSkills.map((s) => (
             <View key={s} style={styles.chip}>
-              <Text style={styles.chipText}>{s}</Text>
+              <Text style={styles.chipText}>{tagName(s)}</Text>
             </View>
           ))}
         </View>

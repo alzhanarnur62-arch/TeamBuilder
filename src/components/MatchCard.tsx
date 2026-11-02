@@ -1,7 +1,7 @@
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, shadow } from '../theme';
-import { t, roleName } from '../i18n';
+import { t, roleName, tagName } from '../i18n';
 import type { Project } from '../types';
 import type { TeamMember } from '../utils/matching';
 
@@ -43,7 +43,7 @@ export default function MatchCard({
           return (
             <View key={sk} style={[styles.chip, hit && styles.chipHit]}>
               <Text style={[styles.chipText, hit && styles.chipTextHit]}>
-                {hit ? '✓ ' : ''}{sk}
+                {hit ? '✓ ' : ''}{tagName(sk)}
               </Text>
             </View>
           );

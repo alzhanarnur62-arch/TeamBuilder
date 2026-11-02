@@ -8,7 +8,7 @@ import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, shadow } from '../theme';
 import { useProfile } from '../context/ProfileContext';
-import { t, useLang, roleName, slotName } from '../i18n';
+import { t, useLang, roleName, slotName, tagName, localized } from '../i18n';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { students } from '../data/mock';
 import type { Role } from '../types';
@@ -141,7 +141,7 @@ export default function ProfileScreen({ onLogout }: { onLogout: () => void }) {
     ]);
   };
 
-  const info = [profile.age ? t('common.age', { n: profile.age }) : '', profile.city].filter(Boolean).join(' · ');
+  const info = [profile.age ? t('common.age', { n: profile.age }) : '', localized(profile.i18n, 'city', profile.city)].filter(Boolean).join(' · ');
 
   return (
     <KeyboardAvoidingView
@@ -191,7 +191,7 @@ export default function ProfileScreen({ onLogout }: { onLogout: () => void }) {
               <Chips options={ROLES} selected={[role]} onToggle={(r) => setRole(r as Role)} label={roleName} />
 
               <Text style={styles.label}>{t('profile.mySkills')}</Text>
-              <Chips options={skillOptions} selected={skills} onToggle={(x) => setSkills(toggle(skills, x))} />
+              <Chips options={skillOptions} selected={skills} onToggle={(x) => setSkills(toggle(skills, x))} label={tagName} />
               <View style={styles.row}>
                 <TextInput style={[styles.input, { flex: 1 }]} value={newSkill} onChangeText={setNewSkill}
                   placeholder={t('common.otherSkill')} placeholderTextColor={colors.textMuted}
@@ -202,7 +202,7 @@ export default function ProfileScreen({ onLogout }: { onLogout: () => void }) {
               </View>
 
               <Text style={styles.label}>{t('profile.myInterests')}</Text>
-              <Chips options={interestOptions} selected={interests}
+              <Chips options={interestOptions} selected={interests} label={tagName}
                 onToggle={(x) => setInterests(toggle(interests, x))} />
 
               <Text style={styles.label}>{t('profile.mySlots')}</Text>
@@ -223,7 +223,7 @@ export default function ProfileScreen({ onLogout }: { onLogout: () => void }) {
               {profile.email ? <Text style={styles.muted}>{profile.email}</Text> : null}
               {info ? <Text style={styles.muted}>{info}</Text> : null}
               <Text style={styles.about}>
-                {profile.about || t('profile.aboutEmpty')}
+                {localized(profile.i18n, 'about', profile.about) || t('profile.aboutEmpty')}
               </Text>
 
               <View style={styles.compet}>
@@ -231,11 +231,11 @@ export default function ProfileScreen({ onLogout }: { onLogout: () => void }) {
                 <Chips options={[profile.role]} selected={[profile.role]} label={roleName} />
                 <Text style={styles.label}>{t('profile.mySkills')}</Text>
                 {profile.skills.length > 0
-                  ? <Chips options={profile.skills} selected={[]} />
+                  ? <Chips options={profile.skills} selected={[]} label={tagName} />
                   : <Text style={styles.hint}>{t('profile.noSkills')}</Text>}
                 <Text style={styles.label}>{t('profile.myInterests')}</Text>
                 {profile.interests.length > 0
-                  ? <Chips options={profile.interests} selected={[]} />
+                  ? <Chips options={profile.interests} selected={[]} label={tagName} />
                   : <Text style={styles.hint}>{t('common.notSet')}</Text>}
                 <Text style={styles.label}>{t('profile.mySlots')}</Text>
                 {profile.freeSlots.length > 0

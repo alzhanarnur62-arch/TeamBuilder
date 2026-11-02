@@ -65,6 +65,7 @@ export type ProfileRow = {
   about: string;
   photo: string | null;
   is_demo: boolean;
+  i18n?: Record<string, Record<string, string>>;
 };
 
 export type NewIdea = Omit<Project, 'id' | 'ownerId'>;
@@ -108,6 +109,7 @@ const toProject = (r: any): Project => ({
   interests: r.interests ?? [],
   slots: r.slots ?? [],
   teamSize: r.team_size ?? 4,
+  i18n: r.i18n ?? {},
 });
 const toApp = (r: any): Application => ({
   id: r.id,
@@ -154,6 +156,7 @@ export function rowToStudent(p: ProfileRow): Student {
     age: p.age || undefined,
     city: p.city || undefined,
     about: p.about || undefined,
+    i18n: p.i18n ?? {},
   };
 }
 

@@ -12,6 +12,7 @@ const icons: Record<string, [IconName, IconName]> = {
   Projects: ['home', 'home-outline'],
   MyTeams: ['people', 'people-outline'],
   Chats: ['chatbubbles', 'chatbubbles-outline'],
+  Favorites: ['bookmark', 'bookmark-outline'],
   Profile: ['person', 'person-outline'],
 };
 

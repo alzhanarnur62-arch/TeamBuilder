@@ -26,6 +26,9 @@ function deviceLang(): Lang {
 
 let current: Lang = deviceLang();
 
+/** Қазіргі тіл — компоненттен тыс жерде (мысалы, API сұранысында) керек болғанда. */
+export const getLang = (): Lang => current;
+
 export type Params = Record<string, string | number>;
 
 export function t(key: Key, params?: Params): string {
@@ -54,6 +57,27 @@ export const slotName = (slot: string) => {
   return DAY_KEYS[day] ? [t(DAY_KEYS[day]), ...rest].join(' ') : slot;
 };
 export const slotsText = (slots: string[]) => slots.map(slotName).join(', ');
+
+/** Қызығушылықтар мен кейбір дағдылар базада қазақша сөз ретінде сақталады — көрсеткенде аударамыз. */
+const TAG_KEYS: Record<string, Key> = {
+  'Мобильді': 'tag.mobile',
+  'Стартап': 'tag.startup',
+  'Серверлер': 'tag.servers',
+  'Дизайн': 'tag.design',
+  'Брендинг': 'tag.branding',
+  'Сапа': 'tag.quality',
+  'Жобаларды басқару': 'tag.pm',
+  'Веб': 'tag.web',
+  'Деректер': 'tag.data',
+  'Прототиптеу': 'tag.prototyping',
+};
+export const tagName = (tag: string) => (TAG_KEYS[tag] ? t(TAG_KEYS[tag]) : tag);
+export const tagsText = (tags: string[]) => tags.map(tagName).join(', ');
+
+/** Базадағы аудармалар: {"ru": {"about": "..."}, "en": {...}}. Қазақша — негізгі бағанда. */
+export type I18nMap = Partial<Record<Lang, Record<string, string>>>;
+export const localized = (map: I18nMap | undefined, field: string, original: string) =>
+  (current !== 'kk' && map?.[current]?.[field]) || original;
 
 /* ---------- Провайдер ---------- */
 

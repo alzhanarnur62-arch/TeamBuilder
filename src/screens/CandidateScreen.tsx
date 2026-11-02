@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { colors, shadow } from '../theme';
-import { t, useLang, roleName, slotName } from '../i18n';
+import { t, useLang, roleName, slotName, tagName, tagsText, localized } from '../i18n';
 import { useMyId } from '../context/DataContext';
 import { useIdeas } from '../context/IdeasContext';
 import { useProfile, useStudents } from '../context/ProfileContext';
@@ -48,7 +48,7 @@ export default function CandidateScreen({ route, navigation }: Props) {
       }
     : base;
 
-  const info = [student.age ? t('common.age', { n: student.age }) : '', student.city].filter(Boolean).join(' · ');
+  const info = [student.age ? t('common.age', { n: student.age }) : '', localized(student.i18n, 'city', student.city ?? '')].filter(Boolean).join(' · ');
 
   const matches = allProjects
     .filter((p) => p.ownerId !== student.id)
@@ -62,7 +62,7 @@ export default function CandidateScreen({ route, navigation }: Props) {
       const parts: string[] = [];
       if (roleOk) parts.push(t('cand.roleFits', { role: roleName(student.role) }));
       else parts.push(t('cand.roleNo', { role: roleName(student.role) }));
-      if (have.length > 0) parts.push(t('cand.skills', { list: have.join(', ') }));
+      if (have.length > 0) parts.push(t('cand.skills', { list: tagsText(have) }));
       else parts.push(t('cand.noSkills'));
 
       return { project: p, pct, reason: parts.join(' · ') };
@@ -130,7 +130,7 @@ export default function CandidateScreen({ route, navigation }: Props) {
           <>
             <Text style={styles.section}>{t('cand.about')}</Text>
             <View style={styles.box}>
-              <Text style={styles.about}>{student.about}</Text>
+              <Text style={styles.about}>{localized(student.i18n, 'about', student.about)}</Text>
             </View>
           </>
         ) : null}
@@ -138,7 +138,7 @@ export default function CandidateScreen({ route, navigation }: Props) {
         <Text style={styles.section}>{t('cand.skillsTitle')}</Text>
         <View style={styles.chips}>
           {student.skills.map((sk) => (
-            <View key={sk} style={styles.chip}>
+            <View key={tagName(sk)} style={styles.chip}>
               <Text style={styles.chipText}>{sk}</Text>
             </View>
           ))}

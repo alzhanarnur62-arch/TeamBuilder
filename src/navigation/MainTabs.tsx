@@ -4,6 +4,7 @@ import IdeasScreen from '../screens/IdeasScreen';
 import MyTeamsScreen from '../screens/MyTeamsScreen';
 import ChatsScreen from '../screens/ChatsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import FavoritesScreen from '../screens/FavoritesScreen';
 import { useChats } from '../context/ChatsContext';
 import type { TabParamList } from '../types/navigation';
 import { t, useLang } from '../i18n';
@@ -26,6 +27,7 @@ export default function MainTabs({ onLogout }: { onLogout: () => void }) {
         component={ChatsScreen}
         options={{ title: t('tab.chats'), tabBarBadge: totalUnread > 0 ? totalUnread : undefined }}
       />
+      <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ title: t('tab.favorites') }} />
       <Tab.Screen name="Profile" options={{ title: t('tab.profile') }}>
         {() => <ProfileScreen onLogout={onLogout} />}
       </Tab.Screen>

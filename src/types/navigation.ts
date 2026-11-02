@@ -10,11 +10,13 @@ export type RootStackParamList = {
   Candidate: { studentId: string };
   News: undefined;
   NewsDetails: { announcementId: number };
+  EventRegistration: undefined;
 };
 
 export type TabParamList = {
   Projects: undefined;
   MyTeams: undefined;
   Chats: undefined;
+  Favorites: undefined;
   Profile: undefined;
 };

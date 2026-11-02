@@ -8,7 +8,7 @@ import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, shadow } from '../theme';
 import { useProfile } from '../context/ProfileContext';
-import { t, useLang, roleName, slotName } from '../i18n';
+import { t, useLang, roleName, slotName, tagName } from '../i18n';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { students } from '../data/mock';
 import type { Role } from '../types';
@@ -122,6 +122,7 @@ export default function ProfileSetupScreen({ email }: { email: string }) {
           <Chips
             options={[...ALL_SKILLS, ...extraSkills]}
             selected={skills}
+            label={tagName}
             onToggle={(x) => setSkills(toggle(skills, x))}
           />
           <View style={styles.addRow}>
@@ -139,7 +140,7 @@ export default function ProfileSetupScreen({ email }: { email: string }) {
           </View>
 
           <Text style={styles.label}>{t('setup.interests')}</Text>
-          <Chips options={ALL_INTERESTS} selected={interests} onToggle={(x) => setInterests(toggle(interests, x))} />
+          <Chips options={ALL_INTERESTS} selected={interests} onToggle={(x) => setInterests(toggle(interests, x))} label={tagName} />
 
           <Text style={styles.label}>{t('setup.slots')}</Text>
           <Chips options={ALL_SLOTS} selected={slots} onToggle={(x) => setSlots(toggle(slots, x))} label={slotName} />

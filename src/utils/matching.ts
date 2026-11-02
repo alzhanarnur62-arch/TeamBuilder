@@ -1,5 +1,5 @@
 import { Match, Project, Role, Student } from '../types';
-import { t, roleName, slotsText } from '../i18n';
+import { t, roleName, slotsText, tagsText } from '../i18n';
 
 /*
  * Команда құру алгоритмі.
@@ -191,15 +191,15 @@ function explainMember(
   const othersSkills = others.flatMap((x) => x.skills);
   const mine = overlap(project.neededSkills, m.skills);
   const onlyMine = mine.filter((x) => !has(othersSkills, x));
-  if (onlyMine.length) reasons.push(t('m.uniqueSkills', { list: onlyMine.join(', ') }));
-  else if (mine.length) reasons.push(t('m.hasSkills', { list: mine.join(', ') }));
+  if (onlyMine.length) reasons.push(t('m.uniqueSkills', { list: tagsText(onlyMine) }));
+  else if (mine.length) reasons.push(t('m.hasSkills', { list: tagsText(mine) }));
 
   const time = overlap(project.slots, m.freeSlots);
   if (time.length) reasons.push(t('m.timeFits', { slots: slotsText(time) }));
   else if (project.slots.length) warnings.push(t('m.timeNo'));
 
   const ints = overlap(project.interests ?? [], m.interests);
-  if (ints.length) reasons.push(t('m.interests', { list: ints.join(', ') }));
+  if (ints.length) reasons.push(t('m.interests', { list: tagsText(ints) }));
 
   const busyIn = busy[m.id] ?? [];
   if (busyIn.length && !fixedNote) warnings.push(t('m.busy', { projects: busyIn.join('», «') }));
@@ -272,7 +272,7 @@ function summarize(v: ReturnType<typeof evaluate>, members: Student[]): string[]
     v.missingRoles.length ? t('s.missingRoles', { list: v.missingRoles.map(roleName).join(', ') }) : t('s.allRoles'),
   );
   lines.push(
-    v.missingSkills.length ? t('s.missingSkills', { list: v.missingSkills.join(', ') }) : t('s.allSkills'),
+    v.missingSkills.length ? t('s.missingSkills', { list: tagsText(v.missingSkills) }) : t('s.allSkills'),
   );
   lines.push(
     v.commonSlots.length

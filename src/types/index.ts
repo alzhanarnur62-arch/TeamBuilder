@@ -1,3 +1,5 @@
+import type { I18nMap } from '../i18n';
+
 export type Role = 'Frontend' | 'Backend' | 'Дизайнер' | 'Тестілеуші' | 'Менеджер';
 
 export type Student = {
@@ -12,6 +14,8 @@ export type Student = {
   age?: string;
   city?: string;
   about?: string;
+  /** Аудармалар: about, city */
+  i18n?: I18nMap;
 };
 
 export type Project = {
@@ -24,6 +28,8 @@ export type Project = {
   interests?: string[];
   slots: string[];
   teamSize: number;
+  /** Аудармалар: description */
+  i18n?: I18nMap;
 };
 
 export type Match = {

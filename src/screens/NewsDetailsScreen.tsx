@@ -13,7 +13,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'NewsDetails'>;
 
 /** Маршрут параметріндегі id бойынша бір хабарландыруды API-ден алады. */
 export default function NewsDetailsScreen({ route }: Props) {
-  useLang();
+  const { lang } = useLang();
   const { announcementId } = route.params;
   const [item, setItem] = useState<Announcement | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,7 +25,7 @@ export default function NewsDetailsScreen({ route }: Props) {
     const controller = new AbortController();
     abortRef.current = controller;
     try {
-      const data = await getAnnouncement(announcementId, controller.signal);
+      const data = await getAnnouncement(announcementId, lang, controller.signal);
       setItem(data);
       setError(null);
     } catch (e) {
@@ -37,7 +37,7 @@ export default function NewsDetailsScreen({ route }: Props) {
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
-  }, [announcementId]);
+  }, [announcementId, lang]);
 
   useEffect(() => {
     Promise.resolve().then(load);
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5,
   },
   badgeText: { color: colors.primary, fontSize: 12, fontWeight: '800' },
-  title: { fontSize: 22, fontWeight: '800', color: colors.text, textTransform: 'capitalize', textAlign: 'left' },
+  title: { fontSize: 22, fontWeight: '800', color: colors.text, textAlign: 'left' },
   body: { fontSize: 16, color: colors.text, lineHeight: 24, marginTop: 12 },
   retryBtn: {
     flexDirection: 'row', gap: 8, alignItems: 'center', backgroundColor: colors.primary,

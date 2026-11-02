@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { colors, shadow } from '../theme';
-import { t, useLang, roleName, slotName } from '../i18n';
+import { t, useLang, roleName, slotName, tagName, localized } from '../i18n';
 import type { RootStackParamList, TabParamList } from '../types/navigation';
 import { useStudents } from '../context/ProfileContext';
 import { useMyId } from '../context/DataContext';
@@ -43,7 +43,7 @@ export default function IdeasScreen() {
     .filter((s) => (roleFilter ? String(s.role) === roleFilter : true))
     .filter((s) => {
       if (!q) return true;
-      const haystack = [s.name, String(s.role), s.city ?? '', s.about ?? '', ...s.skills]
+      const haystack = [s.name, roleName(s.role), localized(s.i18n, 'city', s.city ?? ''), localized(s.i18n, 'about', s.about ?? ''), ...s.skills.map(tagName)]
         .join(' ')
         .toLowerCase();
       return haystack.includes(q);
@@ -120,6 +120,17 @@ export default function IdeasScreen() {
         </View>
         <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
       </Pressable>
+
+      <Pressable style={styles.newsTile} onPress={() => navigation.navigate('EventRegistration')}>
+        <View style={[styles.newsIcon, { backgroundColor: colors.accent }]}>
+          <Ionicons name="calendar" size={22} color="#fff" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.newsTitle}>{t('ev.tile')}</Text>
+          <Text style={styles.newsSub}>{t('ev.tileSub')}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+      </Pressable>
     </>
   );
 
@@ -164,7 +175,7 @@ export default function IdeasScreen() {
                   <Text style={styles.badgeFit}>{t('home.fit', { n: fit ?? 0 })}</Text>
                 )}
                 <Text style={styles.cardTitle}>{item.title}</Text>
-                <Text style={styles.cardText}>{item.description}</Text>
+                <Text style={styles.cardText}>{localized(item.i18n, 'description', item.description)}</Text>
                 <View style={styles.chips}>
                   {item.neededRoles.map((r) => (
                     <View key={r} style={styles.chip}>
@@ -240,7 +251,7 @@ export default function IdeasScreen() {
               </View>
             }
             renderItem={({ item }) => {
-              const info = [item.age ? t('common.age', { n: item.age }) : '', item.city].filter(Boolean).join(' · ');
+              const info = [item.age ? t('common.age', { n: item.age }) : '', localized(item.i18n, 'city', item.city ?? '')].filter(Boolean).join(' · ');
               return (
                 <Pressable
                   style={styles.card}
@@ -265,12 +276,12 @@ export default function IdeasScreen() {
                     <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
                   </View>
 
-                  {item.about ? <Text style={styles.cardText}>{item.about}</Text> : null}
+                  {item.about ? <Text style={styles.cardText}>{localized(item.i18n, 'about', item.about)}</Text> : null}
 
                   <View style={styles.chips}>
                     {item.skills.slice(0, 4).map((sk) => (
                       <View key={sk} style={styles.chip}>
-                        <Text style={styles.chipText}>{sk}</Text>
+                        <Text style={styles.chipText}>{tagName(sk)}</Text>
                       </View>
                     ))}
                   </View>
