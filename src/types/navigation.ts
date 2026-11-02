@@ -11,6 +11,7 @@ export type RootStackParamList = {
   News: undefined;
   NewsDetails: { announcementId: number };
   EventRegistration: undefined;
+  SavedDetails: { id: number };
 };
 
 export type TabParamList = {

@@ -12,6 +12,11 @@ create table if not exists public.announcements (
   created_at timestamptz not null default now()
 );
 
+-- Как у настоящих новостей: фото, рубрика, дата публикации
+alter table public.announcements add column if not exists image_url text;
+alter table public.announcements add column if not exists category text not null default 'campus';
+alter table public.announcements add column if not exists published_at timestamptz not null default now();
+
 alter table public.announcements enable row level security;
 drop policy if exists announcements_read on public.announcements;
 -- Новости публичные: читать может любой, менять — только через SQL Editor
@@ -92,6 +97,25 @@ on conflict (id) do update set
   author_id = excluded.author_id,
   title_kk = excluded.title_kk, title_ru = excluded.title_ru, title_en = excluded.title_en,
   body_kk = excluded.body_kk, body_ru = excluded.body_ru, body_en = excluded.body_en;
+
+-- Фото (Unsplash), рубрика, источник и дата публикации (самая свежая — сегодня)
+-- Источники (author_id): 1 — студенческий отдел, 2 — учебный отдел, 3 — центр карьеры, 4 — IT-отдел, 5 — спортклуб
+update public.announcements as a
+set author_id = v.author_id, image_url = v.image_url, category = v.category,
+    published_at = date_trunc('hour', now()) - make_interval(days => v.days_ago, hours => v.id)
+from (values
+  (1, 1, 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1000&q=75&auto=format&fit=crop', 'events', 0),
+  (2, 2, 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1000&q=75&auto=format&fit=crop', 'study', 1),
+  (3, 3, 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1000&q=75&auto=format&fit=crop', 'career', 1),
+  (4, 3, 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1000&q=75&auto=format&fit=crop', 'events', 2),
+  (5, 2, 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=1000&q=75&auto=format&fit=crop', 'study', 3),
+  (6, 1, 'https://images.unsplash.com/photo-1606761568499-6d2451b23c66?w=1000&q=75&auto=format&fit=crop', 'campus', 4),
+  (7, 5, 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1000&q=75&auto=format&fit=crop', 'sport', 5),
+  (8, 4, 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=1000&q=75&auto=format&fit=crop', 'campus', 6),
+  (9, 1, 'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=1000&q=75&auto=format&fit=crop', 'clubs', 7),
+  (10, 1, 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=1000&q=75&auto=format&fit=crop', 'campus', 8)
+) as v(id, author_id, image_url, category, days_ago)
+where a.id = v.id;
 
 -- ============ 2. Переводы демо-данных ============
 -- i18n = {"ru": {...}, "en": {...}}. Казахский текст остаётся в основных колонках.

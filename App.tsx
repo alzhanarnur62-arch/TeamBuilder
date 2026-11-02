@@ -17,6 +17,7 @@ import CandidateScreen from './src/screens/CandidateScreen';
 import NewsScreen from './src/screens/NewsScreen';
 import NewsDetailsScreen from './src/screens/NewsDetailsScreen';
 import EventRegistrationScreen from './src/screens/EventRegistrationScreen';
+import SavedDetailsScreen from './src/screens/SavedDetailsScreen';
 import MainTabs from './src/navigation/MainTabs';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { DataProvider } from './src/context/DataContext';
@@ -102,6 +103,7 @@ function Root() {
             <Stack.Screen name="News" component={NewsScreen} options={{ ...back, title: t('news.title') }} />
             <Stack.Screen name="NewsDetails" component={NewsDetailsScreen} options={{ ...back, title: t('news.details') }} />
             <Stack.Screen name="EventRegistration" component={EventRegistrationScreen} options={{ ...back, title: t('ev.navTitle') }} />
+            <Stack.Screen name="SavedDetails" component={SavedDetailsScreen} options={{ ...back, title: t('fav.details') }} />
           </>
         )}
       </Stack.Navigator>

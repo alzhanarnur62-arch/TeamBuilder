@@ -1,6 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View, ActivityIndicator } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { Alert, FlatList, Image, Pressable, StyleSheet, Text, TextInput, View, ActivityIndicator } from 'react-native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../types/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -9,6 +11,7 @@ import { t, useLang } from '../i18n';
 import { useMyId } from '../context/DataContext';
 import { getAnnouncement } from '../api/announcements';
 import { getSavedPosts, toggleRead, removeSaved, updateText, type SavedPost } from '../database/favorites';
+import { categoryColor, categoryName, sourceName } from '../utils/newsMeta';
 
 type Filter = 'all' | 'unread';
 
@@ -30,6 +33,9 @@ export default function FavoritesScreen() {
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const locked = useRef(false); // бір басу — бір өзгерту
+  // Серверден жаңарту сәтсіз болса — тек ескерту, батырмаларды бұғаттамаймыз (деректер орнында)
+  const [notice, setNotice] = useState('');
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   // Қойындыға қайта кірген сайын базаны оқимыз
   useFocusEffect(
@@ -62,7 +68,7 @@ export default function FavoritesScreen() {
     }
   }
 
-  async function change(action: () => Promise<unknown>, failKey: 'fav.changeError' | 'fav.syncError' = 'fav.changeError') {
+  async function change(action: () => Promise<unknown>) {
     if (locked.current) return;
     locked.current = true;
     setBusy(true);
@@ -70,7 +76,7 @@ export default function FavoritesScreen() {
     try {
       await action();
     } catch {
-      setError(t(failKey));
+      setError(t('fav.changeError'));
       locked.current = false;
       setBusy(false);
       return;
@@ -93,15 +99,26 @@ export default function FavoritesScreen() {
     ]);
   }
 
-  // Күрделі тапсырма: мәтінді серверден жаңарту (оқылу күйі сақталады)
-  function syncFromServer() {
+  // Күрделі тапсырма: мәтін мен суретті серверден жаңарту (оқылу күйі сақталады)
+  async function syncFromServer() {
+    if (locked.current) return;
     Haptics.selectionAsync();
-    void change(async () => {
-      for (const item of items) {
+    locked.current = true;
+    setBusy(true);
+    setNotice('');
+    let failed = false;
+    for (const item of items) {
+      try {
         const fresh = await getAnnouncement(item.id, lang);
         await updateText(myId, fresh);
+      } catch {
+        failed = true; // интернет жоқ — қалғандары да өтпейді, бірақ сақталғандар орнында
       }
-    }, 'fav.syncError');
+    }
+    await reloadAfterChange();
+    locked.current = false;
+    setBusy(false);
+    if (failed) setNotice(t('fav.syncError'));
   }
 
   const unreadCount = items.filter((i) => i.isRead === 0).length;
@@ -113,19 +130,44 @@ export default function FavoritesScreen() {
 
   function renderSaved({ item }: { item: SavedPost }) {
     const read = item.isRead === 1;
+    // Сурет базадан (офлайн көшірме), болмаса — сілтемеден
+    const photo = item.imageData ?? item.image;
     return (
       <View style={[styles.card, read && styles.cardRead]}>
-        <View style={styles.cardTop}>
-          <View style={[styles.status, read ? styles.statusRead : styles.statusUnread]}>
-            <Ionicons name={read ? 'checkmark-done' : 'ellipse'} size={read ? 14 : 8} color={read ? colors.success : colors.primary} />
-            <Text style={[styles.statusText, { color: read ? colors.success : colors.primary }]}>
-              {read ? t('fav.read') : t('fav.unread')}
+        <Pressable
+          style={({ pressed }) => [styles.cardMain, pressed && { opacity: 0.7 }]}
+          onPress={() => navigation.navigate('SavedDetails', { id: item.id })}
+        >
+          {photo ? (
+            <Image source={{ uri: photo }} style={styles.thumb} resizeMode="cover" />
+          ) : (
+            <View style={[styles.thumb, styles.thumbEmpty]}>
+              <Ionicons name="newspaper" size={28} color={colors.primary} />
+            </View>
+          )}
+          <View style={{ flex: 1 }}>
+            <View style={styles.topLine}>
+              {item.category ? (
+                <Text style={[styles.category, { color: categoryColor[item.category] }]} numberOfLines={1}>
+                  {categoryName(item.category).toUpperCase()}
+                </Text>
+              ) : (
+                <View />
+              )}
+              <View style={[styles.status, read ? styles.statusRead : styles.statusUnread]}>
+                <Ionicons name={read ? 'checkmark-done' : 'ellipse'} size={read ? 12 : 7} color={read ? colors.success : colors.primary} />
+                <Text style={[styles.statusText, { color: read ? colors.success : colors.primary }]}>
+                  {read ? t('fav.read') : t('fav.unread')}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.heading} numberOfLines={3}>{item.title}</Text>
+            <Text style={styles.date} numberOfLines={1}>
+              {[item.userId ? sourceName(item.userId) : null, dateOf(item.savedAt)].filter(Boolean).join(' · ')}
             </Text>
           </View>
-          <Text style={styles.date}>{t('fav.savedAt', { date: dateOf(item.savedAt) })}</Text>
-        </View>
-        <Text style={styles.heading}>{item.title}</Text>
-        <Text style={styles.text}>{item.body}</Text>
+        </Pressable>
+
         <View style={styles.actions}>
           <Pressable
             style={[styles.action, disabled && styles.disabled]}
@@ -142,9 +184,9 @@ export default function FavoritesScreen() {
             style={[styles.action, styles.actionDanger, disabled && styles.disabled]}
             disabled={disabled}
             onPress={() => confirmRemove(item.id)}
+            accessibilityLabel={t('common.delete')}
           >
             <Ionicons name="trash-outline" size={16} color={colors.danger} />
-            <Text style={[styles.actionText, { color: colors.danger }]}>{t('common.delete')}</Text>
           </Pressable>
         </View>
       </View>
@@ -166,11 +208,6 @@ export default function FavoritesScreen() {
               <Text style={styles.title}>{t('fav.title')}</Text>
               <Text style={styles.sub}>{t('fav.sub')}</Text>
             </View>
-            {items.length > 0 && (
-              <Pressable style={[styles.syncBtn, disabled && styles.disabled]} onPress={syncFromServer} disabled={disabled}>
-                {busy ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="cloud-download-outline" size={20} color={colors.primary} />}
-              </Pressable>
-            )}
           </View>
 
           <View style={styles.filters}>
@@ -191,6 +228,17 @@ export default function FavoritesScreen() {
           </View>
 
           {items.length > 0 && (
+            <Pressable style={[styles.syncBtn, disabled && styles.disabled]} onPress={() => { void syncFromServer(); }} disabled={disabled}>
+              {busy ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Ionicons name="cloud-download-outline" size={18} color={colors.primary} />
+              )}
+              <Text style={styles.syncText}>{t('fav.sync')}</Text>
+            </Pressable>
+          )}
+
+          {items.length > 0 && (
             <View style={styles.search}>
               <Ionicons name="search" size={18} color={colors.textMuted} />
               <TextInput
@@ -205,6 +253,13 @@ export default function FavoritesScreen() {
           )}
 
           {loading && <Text style={styles.muted}>{t('news.loading')}</Text>}
+          {!!notice && (
+            <Pressable style={styles.noticeBox} onPress={() => setNotice('')}>
+              <Ionicons name="cloud-offline" size={18} color={colors.accent} />
+              <Text style={styles.noticeText}>{notice}</Text>
+              <Ionicons name="close" size={16} color={colors.accent} />
+            </Pressable>
+          )}
           {!!error && (
             <View style={styles.errorBox}>
               <Ionicons name="alert-circle" size={18} color={colors.danger} />
@@ -234,9 +289,10 @@ const styles = StyleSheet.create({
   title: { fontSize: 30, fontWeight: '800', color: colors.text },
   sub: { fontSize: 15, color: colors.textMuted, marginTop: 4 },
   syncBtn: {
-    width: 46, height: 46, borderRadius: 14, backgroundColor: colors.card,
-    alignItems: 'center', justifyContent: 'center', ...shadow,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 12,
+    backgroundColor: colors.primarySoft, borderRadius: 12, paddingVertical: 10,
   },
+  syncText: { color: colors.primary, fontSize: 13, fontWeight: '800' },
   filters: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   filter: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: colors.card, ...shadow },
   filterActive: { backgroundColor: colors.primary },
@@ -253,17 +309,27 @@ const styles = StyleSheet.create({
     borderRadius: 12, padding: 12, marginBottom: 12,
   },
   errorText: { flex: 1, color: colors.danger, fontWeight: '600', fontSize: 14 },
-  card: { backgroundColor: colors.card, borderRadius: 18, padding: 16, marginBottom: 12, ...shadow },
+  card: { backgroundColor: colors.card, borderRadius: 18, padding: 12, marginBottom: 12, ...shadow },
+  cardMain: { flexDirection: 'row', gap: 12 },
+  thumb: { width: 96, height: 96, borderRadius: 14 },
+  thumbEmpty: { backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  topLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
+  category: { flex: 1, fontSize: 11, fontWeight: '800', letterSpacing: 0.6 },
+  noticeBox: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.accentSoft,
+    borderRadius: 12, padding: 12, marginBottom: 12,
+  },
+  noticeText: { flex: 1, color: colors.accent, fontWeight: '700', fontSize: 13 },
   cardRead: { opacity: 0.75 },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  status: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4 },
+  status: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
   statusUnread: { backgroundColor: colors.primarySoft },
   statusRead: { backgroundColor: colors.successSoft },
-  statusText: { fontSize: 12, fontWeight: '800' },
-  date: { fontSize: 11, color: colors.textMuted },
-  heading: { fontSize: 17, fontWeight: '800', color: colors.text },
+  statusText: { fontSize: 11, fontWeight: '800' },
+  date: { fontSize: 12, color: colors.textMuted, marginTop: 6 },
+  heading: { fontSize: 15, fontWeight: '800', color: colors.text, marginTop: 4, lineHeight: 20 },
   text: { fontSize: 14, color: colors.text, lineHeight: 20, marginTop: 6 },
-  actions: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  actions: { flexDirection: 'row', gap: 8, marginTop: 10 },
   action: {
     flex: 1, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center',
     borderRadius: 12, paddingVertical: 10, backgroundColor: colors.primarySoft,

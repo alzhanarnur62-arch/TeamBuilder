@@ -12,14 +12,15 @@ export const API_URL =
   process.env.EXPO_PUBLIC_NEWS_API_URL ?? `${process.env.EXPO_PUBLIC_SUPABASE_URL}/rest/v1`;
 const API_KEY = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '';
 const HEADERS = { apikey: API_KEY, Accept: 'application/json' };
-const CACHE_KEY = 'teambuilder_news_cache_v2';
+const CACHE_KEY = 'teambuilder_news_cache_v3';
 
 /** Жауап Announcement типімен бірдей болуы үшін бағандардың атын өзгертеміз. */
-const fields = (lang: Lang) => `id,userId:author_id,title:title_${lang},body:body_${lang}`;
+const fields = (lang: Lang) =>
+  `id,userId:author_id,title:title_${lang},body:body_${lang},image:image_url,category,publishedAt:published_at`;
 
 /** GET /announcements — 10 хабарландыру. signal — сұранысты тоқтату үшін (AbortController). */
 export async function getAnnouncements(lang: Lang, signal?: AbortSignal): Promise<Announcement[]> {
-  const response = await fetch(`${API_URL}/announcements?select=${fields(lang)}&order=id.asc&limit=10`, {
+  const response = await fetch(`${API_URL}/announcements?select=${fields(lang)}&order=published_at.desc&limit=10`, {
     signal,
     headers: HEADERS,
   });

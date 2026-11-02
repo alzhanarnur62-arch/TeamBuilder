@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Alert, View, Text, FlatList, TextInput, Pressable, ActivityIndicator, StyleSheet,
+  Alert, View, Text, FlatList, TextInput, Pressable, ActivityIndicator, ScrollView, StyleSheet,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -10,12 +10,15 @@ import { colors, shadow } from '../theme';
 import { t, useLang } from '../i18n';
 import { AnnouncementCard } from '../components/AnnouncementCard';
 import { getAnnouncements, readNewsCache, writeNewsCache, isAbort } from '../api/announcements';
-import type { Announcement } from '../types/announcement';
+import type { Announcement, NewsCategory } from '../types/announcement';
+import { categoryColor } from '../utils/newsMeta';
 import type { RootStackParamList } from '../types/navigation';
 import { savePost, getSavedIds } from '../database/favorites';
 import { useMyId } from '../context/DataContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'News'>;
+
+const CATEGORIES: (NewsCategory | 'all')[] = ['all', 'events', 'study', 'career', 'sport', 'campus', 'clubs'];
 
 const timeOf = (ts: number) => {
   const d = new Date(ts);
@@ -30,6 +33,7 @@ export default function NewsScreen({ navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [cachedAt, setCachedAt] = useState<number | null>(null);
   const [query, setQuery] = useState('');
+  const [category, setCategory] = useState<NewsCategory | 'all'>('all');
   const abortRef = useRef<AbortController | null>(null);
   const myId = useMyId();
   // Офлайн сақталғандардың id-лері (SQLite) — батырманы «Сақталды» деп көрсету үшін
@@ -106,7 +110,11 @@ export default function NewsScreen({ navigation }: Props) {
   };
 
   const q = query.trim().toLowerCase();
-  const visible = q ? items.filter((i) => i.title.toLowerCase().includes(q)) : items;
+  const visible = items
+    .filter((i) => (category === 'all' ? true : i.category === category))
+    .filter((i) => (q ? i.title.toLowerCase().includes(q) : true));
+  // Басты жаңалық — тек толық лентада (сүзгі мен іздеусіз)
+  const showFeatured = category === 'all' && !q;
 
   // 1) Алғашқы жүктеу
   if (loading && items.length === 0) {
@@ -140,9 +148,10 @@ export default function NewsScreen({ navigation }: Props) {
       contentContainerStyle={styles.list}
       data={visible}
       keyExtractor={(item) => item.id.toString()}
-      renderItem={({ item }) => (
+      renderItem={({ item, index }) => (
         <AnnouncementCard
           item={item}
+          variant={showFeatured && index === 0 ? 'featured' : 'row'}
           onPress={() => navigation.navigate('NewsDetails', { announcementId: item.id })}
           saved={savedIds.has(item.id)}
           onSave={() => {
@@ -172,6 +181,30 @@ export default function NewsScreen({ navigation }: Props) {
             )}
           </View>
 
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.cats}
+            style={{ marginBottom: 14, marginHorizontal: -16 }}
+          >
+            {CATEGORIES.map((c) => {
+              const active = category === c;
+              const tint = c === 'all' ? colors.primary : categoryColor[c];
+              return (
+                <Pressable
+                  key={c}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setCategory(c);
+                  }}
+                  style={[styles.cat, active && { backgroundColor: tint, borderColor: tint }]}
+                >
+                  <Text style={[styles.catText, { color: active ? '#fff' : tint }]}>{t(`news.cat.${c}`)}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
           {error && cachedAt !== null && (
             <Pressable style={styles.offline} onPress={retry}>
               <Ionicons name="cloud-offline" size={18} color={colors.accent} />
@@ -186,7 +219,7 @@ export default function NewsScreen({ navigation }: Props) {
       ListEmptyComponent={
         <View style={styles.empty}>
           <Ionicons name={q ? 'search-outline' : 'newspaper-outline'} size={44} color={colors.textMuted} />
-          <Text style={styles.errorTitle}>{q ? t('news.notFound') : t('news.empty')}</Text>
+          <Text style={styles.errorTitle}>{q ? t('news.notFound') : category !== 'all' ? t('news.noInCategory') : t('news.empty')}</Text>
           <Text style={styles.muted}>{q ? t('news.notFoundHint') : t('news.emptyHint')}</Text>
         </View>
       }
@@ -212,6 +245,12 @@ const styles = StyleSheet.create({
     borderRadius: 14, paddingHorizontal: 12, height: 46, marginBottom: 12, ...shadow,
   },
   searchInput: { flex: 1, color: colors.text, fontSize: 15 },
+  cats: { gap: 8, paddingHorizontal: 16 },
+  cat: {
+    borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: colors.card,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  catText: { fontSize: 13, fontWeight: '800' },
   offline: {
     flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.accentSoft,
     borderRadius: 12, padding: 12, marginBottom: 12,
